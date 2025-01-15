@@ -1,7 +1,9 @@
+%% organizzazione file
+
 % Percorsi
 csvFile = 'train_small.csv'; % File CSV con le etichette
-imagesFolder = 'train_set'; % Cartella con tutte le immagini
-outputFolder = 'output'; % Cartella di output organizzata
+imagesFolder = '../train_set'; % Cartella con tutte le immagini
+outputFolder = '../output'; % Cartella di output organizzata
 outlierFolder = fullfile(outputFolder, '251'); % Cartella per gli outlier
 
 % Creazione delle cartelle di output
@@ -13,8 +15,10 @@ if ~exist(outlierFolder, 'dir')
 end
 
 % Leggi il CSV
-data = readtable(csvFile, 'ReadVariableNames', false);
+data = readtable(".." + "/Annotazioni/" + csvFile, 'ReadVariableNames', false);
+%Nomi immagini
 imageNames = data.Var1;
+%etichette
 classLabels = data.Var2;
 
 % Organizza immagini per classe
@@ -41,11 +45,15 @@ end
 
 fprintf('Immagini etichettate organizzate per classe.\n');
 
+%% Gestione feature e modello
+
 % Carica modello pre-addestrato per estrazione feature
 net = resnet18; % Modello pre-addestrato
 layer = 'pool5'; % Strato per feature extraction (corretto per ResNet18)
+analyzeNetwork(net);
 
-% Analisi di coerenza interna per classe
+
+%% Analisi di coerenza interna per classe: pulizia train set
 for classIdx = 1:length(uniqueClasses)
     classFolder = fullfile(outputFolder, num2str(uniqueClasses(classIdx)));
     imageFiles = dir(fullfile(classFolder, '*.jpg'));
@@ -92,8 +100,8 @@ for classIdx = 1:length(uniqueClasses)
     end
     
     % Combina i filtri (distanza, varianza, segmentazione)
-    distanceThreshold = prctile(distances, 99);
-    varianceThreshold = prctile(variances, 1); % Immagini con varianza troppo bassa
+    distanceThreshold = prctile(distances, 95);
+    varianceThreshold = prctile(variances, 5); % Immagini con varianza troppo bassa
     finalOutliers = (distances > distanceThreshold) | ...
                     (variances < varianceThreshold) | ...
                     segmentOutliers;
