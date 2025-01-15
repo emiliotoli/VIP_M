@@ -80,16 +80,8 @@ for classIdx = 1:length(uniqueClasses)
     %centroid = mean(features, 1);
     %distances = vecnorm(features - centroid, 2, 2); % Distanza euclidea
 
-    % [~, C] = kmeans(features, 1, 'Replicates', 5, 'Distance', 'sqeuclidean');
-    % distances = pdist2(features, C);
-
-     % Applica DBSCAN
-    epsilon = 0.5; % Distanza massima tra i punti per considerare lo stesso cluster
-    minPts = 1;    % Numero minimo di punti per formare un cluster
-    labels = dbscan(features, epsilon, minPts, 'Distance', 'euclidean');
-
-    % Identifica gli outlier (label == -1)
-    outliers = (labels == -1);
+    [~, C] = kmeans(features, 1, 'Replicates', 5, 'Distance', 'sqeuclidean');
+    distances = pdist2(features, C);
 
     % Segmentazione per identificare aree di cibo (esempio basato su soglia)
     segmentOutliers = false(size(imageFiles));
@@ -114,7 +106,7 @@ for classIdx = 1:length(uniqueClasses)
     % Combina i filtri (distanza, varianza, segmentazione)
     distanceThreshold = prctile(distances, 90);
     varianceThreshold = prctile(variances, 10); % Immagini con varianza troppo bassa
-    finalOutliers = outliers | ...
+    finalOutliers = (distances > distanceThreshold) | ...
                     (variances < varianceThreshold) | ...
                     segmentOutliers;
     
