@@ -60,7 +60,7 @@ layerLow = 'res3b_relu';
 
 
 % Analisi di coerenza interna per classe: pulizia train set
-for classIdx = 1:length(uniqueClasses)
+for classIdx = 1:30 %length(uniqueClasses)
     classFolder = fullfile(outputFolder, num2str(uniqueClasses(classIdx)));
     imageFiles = dir(fullfile(classFolder, '*.jpg'));
     
@@ -98,10 +98,10 @@ for classIdx = 1:length(uniqueClasses)
     %cluster per feature a basso livello
     [~, C] = kmeans(featuresLow, 1, 'Replicates', 5, 'Distance', 'sqeuclidean');
     distancesLow = pdist2(featuresLow, C);
-    mean_dst_low = mean(distances);
-    std_dst_low = std(distances);
+    mean_dst_low = mean(distancesLow);
+    std_dst_low = std(distancesLow);
     alpha = 1.2;
-    threshold_low = mean_dst + alpha * std_dst;
+    threshold_low = mean_dst_low + alpha * std_dst_low;
 
     % Calcolo del centroide della classe
     %centroid = mean(features, 1);
