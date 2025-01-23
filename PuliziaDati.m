@@ -56,6 +56,7 @@ net = resnet18; % Modello pre-addestrato
 %layer = 'avg_pool';
 layer = 'pool5'; % Strato per feature extraction (corretto per ResNet18)
 %analyzeNetwork(net);
+layerLow = 'res3b_relu';
 
 
 % Analisi di coerenza interna per classe: pulizia train set
@@ -63,6 +64,7 @@ for classIdx = 1:length(uniqueClasses)
     classFolder = fullfile(outputFolder, num2str(uniqueClasses(classIdx)));
     imageFiles = dir(fullfile(classFolder, '*.jpg'));
     
+    featuresLow=[];
     features = [];
     filePaths = {};
     variances = [];
@@ -71,21 +73,35 @@ for classIdx = 1:length(uniqueClasses)
         img = imread(imgPath);
         img = imresize(img, [224, 224]); % Resizing per il modello
         
-        % Feature dal modello
+        % Feature dal modello alto livello
         feature = activations(net, img, layer, 'OutputAs', 'rows');
         features = [features; feature]; %#ok<AGROW>
+
+        % feature dal modello basso livello
+        featureLow = activations(net, img , layerLow , 'OutputAs' , 'rows');
+        featuresLow = [featuresLow ; featureLow];
+
         filePaths{end+1} = imgPath; %#ok<AGROW>
         
         % Calcolo varianza dei pixel
         variances = [variances; var(double(img(:)))]; %#ok<AGROW>
     end
 
+    %cluster per feature ad alto livello
     [~, C] = kmeans(features, 1, 'Replicates', 5, 'Distance', 'sqeuclidean');
     distances = pdist2(features, C);
     mean_dst = mean(distances);
     std_dst = std(distances);
     alpha = 1.2;
     threshold = mean_dst + alpha*std_dst;
+
+    %cluster per feature a basso livello
+    [~, C] = kmeans(featuresLow, 1, 'Replicates', 5, 'Distance', 'sqeuclidean');
+    distancesLow = pdist2(featuresLow, C);
+    mean_dst_low = mean(distances);
+    std_dst_low = std(distances);
+    alpha = 1.2;
+    threshold_low = mean_dst + alpha * std_dst;
 
     % Calcolo del centroide della classe
     %centroid = mean(features, 1);
@@ -117,7 +133,7 @@ for classIdx = 1:length(uniqueClasses)
         end
 
         %% distanza centroide
-        if(distances(i)>=threshold)
+        if(distances(i)>=threshold && distancesLow(i)>= threshold_low)
             distanceThreshold(i)=true;
         end
 
