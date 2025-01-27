@@ -6,8 +6,8 @@ imagesFolder = '../train_set'; % Cartella con tutte le immagini
 outputFolder = '../output'; % Cartella di output organizzata
 outlierFolder = fullfile(outputFolder, '251'); % Cartella per gli outlier
 % 
-% rmdir(outlierFolder, 's');
-% rmdir(outputFolder, 's');
+rmdir(outlierFolder, 's');
+rmdir(outputFolder, 's');
 
 
 % Creazione delle cartelle di output
@@ -60,7 +60,7 @@ layerLow = 'res3b_relu';
 
 
 % Analisi di coerenza interna per classe: pulizia train set
-for classIdx = 1:30 %length(uniqueClasses)
+for classIdx = 1:15 %length(uniqueClasses)
     classFolder = fullfile(outputFolder, num2str(uniqueClasses(classIdx)));
     imageFiles = dir(fullfile(classFolder, '*.jpg'));
     
@@ -92,7 +92,7 @@ for classIdx = 1:30 %length(uniqueClasses)
     distances = pdist2(features, C);
     mean_dst = mean(distances);
     std_dst = std(distances);
-    alpha = 1.2;
+    alpha = 1.75;
     threshold = mean_dst + alpha*std_dst;
 
     %cluster per feature a basso livello
@@ -100,7 +100,7 @@ for classIdx = 1:30 %length(uniqueClasses)
     distancesLow = pdist2(featuresLow, C);
     mean_dst_low = mean(distancesLow);
     std_dst_low = std(distancesLow);
-    alpha = 1.2;
+    alpha = 1.75;
     threshold_low = mean_dst_low + alpha * std_dst_low;
 
     % Calcolo del centroide della classe

@@ -5,9 +5,9 @@ csvFile = 'train_small.csv'; % File CSV con le etichette
 imagesFolder = '../train_set'; % Cartella con tutte le immagini
 outputFolder = '../output'; % Cartella di output organizzata
 outlierFolder = fullfile(outputFolder, '251'); % Cartella per gli outlier
-% 
-% rmdir(outlierFolder, 's');
-% rmdir(outputFolder, 's');
+
+rmdir(outlierFolder, 's');
+rmdir(outputFolder, 's');
 
 
 % Creazione delle cartelle di output
@@ -56,7 +56,6 @@ net = resnet18; % Modello pre-addestrato
 %layer = 'avg_pool';
 layer = 'pool5'; % Strato per feature extraction (corretto per ResNet18)
 %analyzeNetwork(net);
-layerLow = 'res3b_relu';
 
 
 % Analisi di coerenza interna per classe: pulizia train set
@@ -64,7 +63,6 @@ for classIdx = 1:length(uniqueClasses)
     classFolder = fullfile(outputFolder, num2str(uniqueClasses(classIdx)));
     imageFiles = dir(fullfile(classFolder, '*.jpg'));
     
-    featuresLow=[];
     features = [];
     filePaths = {};
     variances = [];
@@ -73,30 +71,21 @@ for classIdx = 1:length(uniqueClasses)
         img = imread(imgPath);
         img = imresize(img, [224, 224]); % Resizing per il modello
         
-        % Feature dal modello alto livello
+        % Feature dal modello
         feature = activations(net, img, layer, 'OutputAs', 'rows');
         features = [features; feature]; %#ok<AGROW>
-
-        % feature dal modello basso livello
-        featureLow = activations(net, img , layerLow , 'OutputAs' , 'rows');
-        featuresLow = [featuresLow ; featureLow];
-
         filePaths{end+1} = imgPath; %#ok<AGROW>
         
         % Calcolo varianza dei pixel
         variances = [variances; var(double(img(:)))]; %#ok<AGROW>
     end
 
-    %cluster per feature ad alto livello
     [~, C] = kmeans(features, 1, 'Replicates', 5, 'Distance', 'sqeuclidean');
     distances = pdist2(features, C);
     mean_dst = mean(distances);
     std_dst = std(distances);
-    alpha = 1.2;
+    alpha = 1.5;
     threshold = mean_dst + alpha*std_dst;
-
-    %cluster per feature a basso livello
-    
 
     % Calcolo del centroide della classe
     %centroid = mean(features, 1);
@@ -123,7 +112,7 @@ for classIdx = 1:length(uniqueClasses)
         segmentedArea = sum(binaryImg(:));
         totalArea = numel(binaryImg);
         % Se l'area segmentata è troppo piccola o troppo grande, è un outlier
-        if segmentedArea < 0.1 * totalArea || segmentedArea > 0.98 * totalArea
+        if segmentedArea < 0.1 * totalArea || segmentedArea > 0.90 * totalArea
             segmentOutliers(i) = true;
         end
 
@@ -132,30 +121,13 @@ for classIdx = 1:length(uniqueClasses)
             distanceThreshold(i)=true;
         end
 
-        %% Calcolo della media e varianza del colore sulle zone segmentate
-        segmentedPixels = double(img) .* double(binaryImg); % Applica la maschera
-    
-        % Seleziona solo i pixel segmentati (non zero)
-        segmentedPixelsR = segmentedPixels(:, :, 1);
-        segmentedPixelsG = segmentedPixels(:, :, 2);
-        segmentedPixelsB = segmentedPixels(:, :, 3);
-    
-        % Calcola la media e la varianza solo sui pixel segmentati
-        meanColor = [
-            mean(segmentedPixelsR(binaryImg > 0)), ...
-            mean(segmentedPixelsG(binaryImg > 0)), ...
-            mean(segmentedPixelsB(binaryImg > 0))
-        ];
-    
-        varColor = [
-            var(segmentedPixelsR(binaryImg > 0)), ...
-            var(segmentedPixelsG(binaryImg > 0)), ...
-            var(segmentedPixelsB(binaryImg > 0))
-        ];
+        %% Calcolo della media e varianza del colore
 
-        % Salva i risultati
-        meanColors(i, :) = meanColor(:)';
-        varColors(i, :) = varColor(:)';
+        meanColor = mean(mean(img, 1), 2);   % Media [R, G, B]
+        varColor = var(reshape(double(img), [], 3), 0, 1); % Varianza [R, G, B]
+        % Memorizza i risultati
+        meanColors(i, :) = meanColor(:)';    % Salva la media
+        varColors(i, :) = varColor(:)';      % Salva la varianza
 
     end
 
@@ -181,6 +153,7 @@ for classIdx = 1:length(uniqueClasses)
     %distanceThreshold = prctile(distances, 90);
     %varianceThreshold = prctile(variances, 5); % Immagini con varianza troppo bassa
     finalOutliers = distanceThreshold| ...
+                   
                     segmentOutliers | ...
                     colorOutliers;
 
