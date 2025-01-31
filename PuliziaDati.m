@@ -60,7 +60,7 @@ layerLow = 'res3b_relu';
 
 
 % Analisi di coerenza interna per classe: pulizia train set
-for classIdx = 1:15 %length(uniqueClasses)
+for classIdx = 1:length(uniqueClasses)
     classFolder = fullfile(outputFolder, num2str(uniqueClasses(classIdx)));
     imageFiles = dir(fullfile(classFolder, '*.jpg'));
     

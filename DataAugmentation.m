@@ -6,10 +6,10 @@ PuliziaDati;
 % essere presenti in seguito alla pulizia effettuata nello script
 % PuliziaDati.m
 
-nAugmentations = 5;
-%nImAugmented=5;
+nAugmentations = 3;
+nImAugmented=5;
 
-for classIdx = 1:15 %length(uniqueClasses)
+for classIdx = 1:length(uniqueClasses)
     classFolder = fullfile(outputFolder , num2str(uniqueClasses(classIdx)));
     imageFiles = dir(fullfile(classFolder , "*.jpg"));
     features = [];
@@ -31,7 +31,7 @@ for classIdx = 1:15 %length(uniqueClasses)
 
     %ordina le immagini in base alla distanza dal centroide
     [~ , sortedIndices] = sort(distances , 'ascend'); %distanza crescente
-    closestImages = sortedIndices(1:min(nAugmentations, length(imageFiles))); % prende il numero di immagini inferiore tra le immagini scelte e il numero di immagini presenti della classe
+    closestImages = sortedIndices(1:min(nImAugmented, length(imageFiles))); % prende il numero di immagini inferiore tra le immagini scelte e il numero di immagini presenti della classe
 
     className = num2str(uniqueClasses(classIdx));
     fprintf('Data Augmentation per la classe %s... \n' , className);
